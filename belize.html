@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>belize countdown</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  #countdown {
+    font-size: 6rem;
+    color: #00ffff;
+    letter-spacing: 8px;
+    text-shadow:
+      0 0 5px #00ffff,
+      0 0 15px #00ffff,
+      0 0 30px #00ffff,
+      0 0 60px #00ffff;
+    animation: glow 2s infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      text-shadow:
+        0 0 5px #00ffff,
+        0 0 15px #00ffff,
+        0 0 30px #00ffff;
+    }
+    to {
+      text-shadow:
+        0 0 10px #00ffff,
+        0 0 25px #00ffff,
+        0 0 50px #00ffff,
+        0 0 80px #00ffff;
+    }
+  }
+
+  @media (max-width: 600px) {
+    #countdown {
+      font-size: 3rem;
+      letter-spacing: 4px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="countdown">00:00:00</div>
+
+<script>
+  const targetDate = new Date("March 21, 2026 00:00:00").getTime();
+  const countdownElement = document.getElementById("countdown");
+
+  function updateCountdown() {
+    const now = new Date().getTime();
+    const difference = targetDate - now;
+
+    if (difference <= 0) {
+      countdownElement.textContent = "00:00:00";
+      clearInterval(interval);
+      return;
+    }
+
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((difference / (1000 * 60)) % 60);
+
+    const formatted =
+      days.toString().padStart(2, '0') + ":" +
+      hours.toString().padStart(2, '0') + ":" +
+      minutes.toString().padStart(2, '0');
+
+    countdownElement.textContent = formatted;
+  }
+
+  updateCountdown();
+  const interval = setInterval(updateCountdown, 1000);
+</script>
+
+</body>
+</html>
