@@ -2,89 +2,250 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>belize countdown</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+<title>we need geeson</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
-  body {
-    margin: 0;
-    height: 100vh;
-    background: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Orbitron', sans-serif;
-  }
+body {
+  margin: 0;
+  background: #000;
+  font-family: 'Orbitron', sans-serif;
+  color: #00ffff;
+}
 
-  #countdown {
-    font-size: 6rem;
-    color: #00ffff;
-    letter-spacing: 8px;
-    text-shadow:
-      0 0 5px #00ffff,
-      0 0 15px #00ffff,
-      0 0 30px #00ffff,
-      0 0 60px #00ffff;
-    animation: glow 2s infinite alternate;
-  }
+/* LOCK SCREEN */
+#lockScreen {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 9999;
+}
 
-  @keyframes glow {
-    from {
-      text-shadow:
-        0 0 5px #00ffff,
-        0 0 15px #00ffff,
-        0 0 30px #00ffff;
-    }
-    to {
-      text-shadow:
-        0 0 10px #00ffff,
-        0 0 25px #00ffff,
-        0 0 50px #00ffff,
-        0 0 80px #00ffff;
-    }
-  }
+#lockScreen input {
+  background: #111;
+  border: 1px solid #00ffff;
+  color: #00ffff;
+  padding: 12px;
+  font-size: 1rem;
+  text-align: center;
+}
 
-  @media (max-width: 600px) {
-    #countdown {
-      font-size: 3rem;
-      letter-spacing: 4px;
-    }
-  }
+#lockScreen button {
+  margin-top: 10px;
+  padding: 10px 20px;
+  background: #00ffff;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* MAIN */
+.container {
+  padding: 60px 8%;
+  display: none;
+}
+
+h1 {
+  text-align: center;
+  letter-spacing: 6px;
+  color: #888;
+  margin-bottom: 60px;
+}
+
+.traveler {
+  margin-bottom: 60px;
+  padding: 25px;
+  border: 1px solid rgba(0,255,255,0.25);
+  border-radius: 12px;
+  background: rgba(0,255,255,0.05);
+  backdrop-filter: blur(6px);
+}
+
+.traveler h2 {
+  margin: 0;
+  color: #0ff;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+.notes {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.route {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+}
+
+.flight {
+  padding: 15px 20px;
+  border: 1px solid rgba(0,255,255,0.3);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.4);
+  min-width: 260px;
+}
+
+.flight strong {
+  color: #fff;
+}
+
+.tz {
+  font-size: 0.7rem;
+  color: #777;
+}
+
+.arrow {
+  font-size: 1.5rem;
+  color: #0ff;
+}
+
+#countdown {
+  margin-top: 80px;
+  text-align: center;
+  font-size: 3rem;
+  letter-spacing: 8px;
+  text-shadow:
+    0 0 5px #00ffff,
+    0 0 15px #00ffff,
+    0 0 30px #00ffff;
+}
 </style>
 </head>
 <body>
 
-<div id="countdown">00:00:00</div>
+<div id="lockScreen">
+  <h2>Enter Password</h2>
+  <input type="password" id="passwordInput" placeholder="Password">
+  <button onclick="checkPassword()">Unlock</button>
+</div>
+
+<div class="container" id="content">
+  <h1>belize</h1>
+
+  <!-- Daphne -->
+  <div class="traveler">
+    <h2>Daphne</h2>
+    <div class="notes">Traveling with Milana</div>
+    <div class="route">
+      <div class="flight">
+        <strong>Alaska 1334</strong><br>
+        LAX (PT) → BZE (CST)<br>
+        3/21/26 — 11:09 AM <span class="tz">PT</span><br>
+        Arrives 4:47 PM <span class="tz">CST</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Milana -->
+  <div class="traveler">
+    <h2>Milana</h2>
+    <div class="notes">Traveling with Daphne</div>
+    <div class="route">
+      <div class="flight">
+        <strong>Alaska 1334</strong><br>
+        LAX (PT) → BZE (CST)<br>
+        3/21/26 — 11:09 AM <span class="tz">PT</span><br>
+        Arrives 4:47 PM <span class="tz">CST</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weston -->
+  <div class="traveler">
+    <h2>Weston</h2>
+    <div class="notes">Details added to EPI portal (2/9)</div>
+    <div class="route">
+      <div class="flight">
+        <strong>United 1345</strong><br>
+        YYZ (ET) → IAH (CT)<br>
+        3/21/26 — 6:10 AM <span class="tz">ET</span><br>
+        Arrives 9:10 AM <span class="tz">CT</span>
+      </div>
+      <div class="arrow">→</div>
+      <div class="flight">
+        <strong>United 1569</strong><br>
+        IAH (CT) → BZE (CST)<br>
+        3/21/26 — 11:58 AM <span class="tz">CT</span><br>
+        Arrives 1:32 PM <span class="tz">CST</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Colm -->
+  <div class="traveler">
+    <h2>Colm</h2>
+    <div class="notes">Details added to EPI portal (2/9)</div>
+    <div class="route">
+      <div class="flight">
+        <strong>AA 2042</strong><br>
+        BNA (CT) → MIA (ET)<br>
+        3/21/26 — 7:30 AM <span class="tz">CT</span><br>
+        Arrives 11:02 AM <span class="tz">ET</span>
+      </div>
+      <div class="arrow">→</div>
+      <div class="flight">
+        <strong>AA 331</strong><br>
+        MIA (ET) → BZE (CST)<br>
+        3/21/26 — 12:21 PM <span class="tz">ET</span><br>
+        Arrives 12:50 PM <span class="tz">CST</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="countdown">00:00:00</div>
+</div>
 
 <script>
-  const targetDate = new Date("March 21, 2026 00:00:00").getTime();
-  const countdownElement = document.getElementById("countdown");
+const PASSWORD = "geeson";
 
-  function updateCountdown() {
-    const now = new Date().getTime();
-    const difference = targetDate - now;
+function checkPassword() {
+  const input = document.getElementById("passwordInput").value;
+  if (input === PASSWORD) {
+    document.getElementById("lockScreen").style.display = "none";
+    document.getElementById("content").style.display = "block";
+  } else {
+    alert("Incorrect password");
+  }
+}
 
-    if (difference <= 0) {
-      countdownElement.textContent = "00:00:00";
-      clearInterval(interval);
-      return;
-    }
+/* Countdown locked to Weston departure:
+   March 21, 2026 6:10 AM Eastern Time (UTC-4) */
 
-    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((difference / (1000 * 60)) % 60);
+const targetDate = new Date(Date.UTC(2026, 2, 21, 10, 10)); 
+// 6:10 AM ET = 10:10 UTC (ET is UTC-4 in March)
 
-    const formatted =
-      days.toString().padStart(2, '0') + ":" +
-      hours.toString().padStart(2, '0') + ":" +
-      minutes.toString().padStart(2, '0');
+const countdownElement = document.getElementById("countdown");
 
-    countdownElement.textContent = formatted;
+function updateCountdown() {
+  const now = new Date();
+  const difference = targetDate - now;
+
+  if (difference <= 0) {
+    countdownElement.textContent = "TAKEOFF";
+    clearInterval(interval);
+    return;
   }
 
-  updateCountdown();
-  const interval = setInterval(updateCountdown, 1000);
+  const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((difference / (1000 * 60)) % 60);
+
+  countdownElement.textContent =
+    days.toString().padStart(2,'0') + ":" +
+    hours.toString().padStart(2,'0') + ":" +
+    minutes.toString().padStart(2,'0');
+}
+
+updateCountdown();
+const interval = setInterval(updateCountdown, 1000);
 </script>
 
 </body>
