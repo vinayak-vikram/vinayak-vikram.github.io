@@ -1,5 +1,11 @@
 [
   {
+    "title": "Sensor-based Updraft Detection",
+    "date": "March 31, 2026",
+    "synopsis": "Attempting to detect updrafts solely with sensors (barometer, altimeter, thermometer, etc) on embedded systems with minimal error. Large-scale maps or intensive computational models cannot run, for obvious reasons",
+    "href": "/posts/updraft_detection.html"
+  },
+  {
     "title": "Cross-compiling ROS2 for iPhone",
     "date": "March 30, 2026",
     "synopsis": "Cross-compiling ROS2 for iPhone. Goal is to bundle basic node and messaging functionality, and maybe a localized python for quick testing purposes. Who knows about the last part.",
