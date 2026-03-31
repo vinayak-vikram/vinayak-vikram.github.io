@@ -21,6 +21,23 @@
       '</footer>';
   }
 
+  // Load Prism.js on any page that has code blocks
+  if (document.querySelector('pre > code')) {
+    var prismCSS = document.createElement('link');
+    prismCSS.rel = 'stylesheet';
+    prismCSS.href = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css';
+    document.head.appendChild(prismCSS);
+
+    var prismCore = document.createElement('script');
+    prismCore.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js';
+    prismCore.onload = function () {
+      var autoloader = document.createElement('script');
+      autoloader.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js';
+      document.body.appendChild(autoloader);
+    };
+    document.body.appendChild(prismCore);
+  }
+
   // On the index page, fetch posts.json and render the post list
   var list = document.getElementById('post-list');
   if (!list) return;
