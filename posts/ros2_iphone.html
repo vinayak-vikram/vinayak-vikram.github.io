@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="synopsis" content="Cross-compiling ROS2 for iPhone. Goal is to bundle basic node and messaging functionality, and maybe a localized python for quick testing purposes. Who knows about the last part.">
+  <title>Cross-compiling ROS2 for iPhone</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main>
+    <div class="post-header">
+      <h1>Cross-compiling ROS2 for iPhone</h1>
+      <p class="post-date">March 30, 2026</p>
+    </div>
+    <div class="post-body">
+      <h1>Preliminary concerns</h1>
+      <p>I genuinely have no clue as to why I decided to attempt this, given all there is that could be annoying. Some of my preliminary concerns and thoughts are below:
+        <ul>
+          <li>Lack of dylib support on iOS; will have to bundle everything which is... unfortunate</li>
+          <li>ROS2 DDS uses multicast UDP, which is blocked on iOS; will have to figure out how to either configure unicast DDS or swap to Zenoh or something (but the latter loses quite a bit of functionality)</li>
+        </ul>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="../template.js"></script>
+</body>
+</html>
+
