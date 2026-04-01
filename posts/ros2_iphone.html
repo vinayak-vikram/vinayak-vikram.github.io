@@ -21,6 +21,7 @@
         <ul>
           <li>Lack of dylib support on iOS; will have to bundle everything which is... unfortunate</li>
           <li>ROS2 DDS uses multicast UDP, which is blocked on iOS; will have to figure out how to either configure unicast DDS or swap to Zenoh or something (but the latter loses quite a bit of functionality)</li>
+	  <li>rcl_interfaces and std_msgs are .msg files that need to be generated with rosidl on my native installation before the output is compiled for iOS</li>
         </ul>
       </p>
       <h1>Porting CycloneDDS</h1>
@@ -29,6 +30,32 @@
       <p>I began by checking out CycloneDDS 0.10.5, for ROS2 Jazzy compatibility.<br><br>
       To build natively, all I had to do was set the flags <code>BUILD_SHARED_LIBS=OFF, ENABLE_SSL=OFF, ENABLE_SECURITY=OFF, ENABLE_SHM=OFF</code> (I also set the build type to release). This generated the file <code>build/ImportExecutables.cmake</code> which is what the later iOS build imports to find <code>idlc</code><br><br>
       iOS make was similar; all I had to do was link the iOS CMake toolchain downloaded earlier. Building was relatively simple as well; I only had to patch <code>net/if_media.h</code> which is for wired/wireless connection detection (MacOS only header), which isn't really relevant in our use case. I simply used <code>__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__</code> to guard against it. Installation was fine; <code>lipo -info</code> gave architecture arm64 (non-fat file)</p>
+      <h1>Building ROS2</h1>
+      <p>Who would have guessed, the shitshow that people call ROS would naturally be quite a bit more challenging to compile than CycloneDDS. The main issue is that when we use our native ROS2 workspace to compile, AMENT_PREFIX_PATH is set to a list of native install prefixes, which when read by CMake links native libraries instead of building in static libs. Just a small example, <code>find_package(rosidl_typesupport_c)</code> points to the native FastRTPS-enabled version which is dynamically linked.<br>
+      To fix this, we need two things:
+      <ul>
+	      <li>set <code>CMAKE_FIND_ROOT_PATH_MODE_*=BOTH</code> so that CMake checks the iOS prefix before the host prefix (both is needed so that ament_cmake generator scripts are still found)</li>
+	      <li>make sure that install-ios is at the beginning of both CMAKE_FIND_ROOT_PATH and CMAKE_PREFIX_PATH so that the iOS libraries are prioritized</li>
+      </ul>
+      I eventually ended up writing a custom wrapper around the aforementioned ios-cmake toolchain that bundled the fixes above. Oh, also, there's no libatomic on iOS. wtf. See <file>/assets/ros2_ios.toolchain.cmake</file>.
+      </p>
+      <h2>The ROS2 Dependency Tree</h2>
+      <p>The dependency tree for ROS2 is extremely confusing, much more so than it appears in the package.xml files. I eventually had to go with the build order below:
+      <ol>
+	      <li><code>rosidl_cmake, rosidl_cli, rosidl_pycommon, rosidl_parser, rosidl_adapter, rosidl_generator_type_description</code> (cmake/python-only rosidl support)</li>
+	      <li><code>rosidl_generator_c, rosidl_generator_cpp</code> (rosidl generators, cmake-only, no compiled code)</li>
+	      <li><code>rosidl_typesupport_c, rosidl_typesupport_cpp</code> (compiled C/C++ libs)</li>
+	      <li><code>libyaml 0.2.5</code> (had to manually build this, it was a pain in the ass)</li>
+	      <li><code>rcl_yaml_param_parser</code> (originally linked libyaml.dylib, had to rebuild)</li>
+	      <li><code>rcpputils, ament_index_cpp, ament_index_python</code> (C++ utilities)</li>
+	      <li><code>builtin_interfaces, service_msgs, rcl_interfaces, type_description_interfaces, rosgraph_msgs, statistics_msgs</code> (message interfaces, rosidl code generation)</li>
+	      <li><code>rosidl_dynamic_typesupport</code></li>
+	      <li><code>rmw_implementation_cmake, rmw_dds_common, rmw_cyclonedds_cpp, rmw_implementation</code></li>
+	      <li><code>rcl</code>, with <code>-DRCL_LOGGING_IMPLEMENTATION=rcl_logging_noop</code></li>
+	      <li><code>libstatistics_collector</code></li>
+	      <li><code>rclcp, std_msgs</code></li>
+      </ol>
+      </p>
     </div>
   </main>
 
@@ -36,4 +63,3 @@
   <script src="../template.js"></script>
 </body>
 </html>
-

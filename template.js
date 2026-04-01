@@ -1,5 +1,5 @@
 (function () {
-  // Inject shared header
+  // === Shared header ===
   var header = document.getElementById('site-header');
   if (header) {
     header.outerHTML =
@@ -12,7 +12,7 @@
       '</header>';
   }
 
-  // Inject shared footer
+  // === Shared footer ===
   var footer = document.getElementById('site-footer');
   if (footer) {
     footer.outerHTML =
@@ -21,24 +21,91 @@
       '</footer>';
   }
 
-  // Load Prism.js on any page that has code blocks
-  if (document.querySelector('pre > code')) {
-    var prismCSS = document.createElement('link');
-    prismCSS.rel = 'stylesheet';
-    prismCSS.href = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css';
-    document.head.appendChild(prismCSS);
+  // === Prism.js — lazy, deduped loader ===
+  var prismState = 'idle'; // idle | loading | ready
+  var prismQueue = [];
 
-    var prismCore = document.createElement('script');
-    prismCore.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js';
-    prismCore.onload = function () {
-      var autoloader = document.createElement('script');
-      autoloader.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js';
-      document.body.appendChild(autoloader);
+  function withPrism(fn) {
+    if (prismState === 'ready') { fn(); return; }
+    prismQueue.push(fn);
+    if (prismState === 'loading') return;
+    prismState = 'loading';
+
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css';
+    document.head.appendChild(link);
+
+    var core = document.createElement('script');
+    core.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js';
+    core.setAttribute('data-manual', '');
+    core.onload = function () {
+      var al = document.createElement('script');
+      al.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js';
+      al.onload = function () {
+        prismState = 'ready';
+        prismQueue.forEach(function (cb) { cb(); });
+        prismQueue = [];
+      };
+      document.body.appendChild(al);
     };
-    document.body.appendChild(prismCore);
+    document.body.appendChild(core);
   }
 
-  // On the index page, fetch posts.json and render the post list
+  function highlightEl(el) {
+    withPrism(function () { Prism.highlightElement(el); });
+  }
+
+  // Highlight any static code blocks already in the post
+  document.querySelectorAll('pre > code').forEach(highlightEl);
+
+  // === <file> tag — collapsible code blocks ===
+  var extLang = {
+    py: 'python', js: 'javascript', ts: 'typescript',
+    cpp: 'cpp', cc: 'cpp', cxx: 'cpp', c: 'c', h: 'cpp', hpp: 'cpp',
+    rs: 'rust', go: 'go', java: 'java', rb: 'ruby',
+    yaml: 'yaml', yml: 'yaml', repos: 'yaml',
+    json: 'json', xml: 'xml', md: 'markdown',
+    sh: 'bash', bash: 'bash', cmake: 'cmake',
+  };
+
+  document.querySelectorAll('file').forEach(function (tag) {
+    var path = tag.textContent.trim();
+    var filename = path.split('/').pop();
+    var ext = filename.includes('.') ? filename.split('.').pop().toLowerCase() : '';
+    var lang = extLang[ext] || '';
+
+    var details = document.createElement('details');
+    details.className = 'file-block';
+
+    var summary = document.createElement('summary');
+    summary.textContent = filename;
+    details.appendChild(summary);
+
+    var pre = document.createElement('pre');
+    var code = document.createElement('code');
+    if (lang) code.className = 'language-' + lang;
+    pre.appendChild(code);
+    details.appendChild(pre);
+
+    tag.replaceWith(details);
+
+    fetch(path)
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.text();
+      })
+      .then(function (text) {
+        code.textContent = text;
+        highlightEl(code);
+      })
+      .catch(function () {
+        code.textContent = '(could not load ' + path + ')';
+        code.style.color = '#6b88a8';
+      });
+  });
+
+  // === Blog index — auto-render post list ===
   var list = document.getElementById('post-list');
   if (!list) return;
 
