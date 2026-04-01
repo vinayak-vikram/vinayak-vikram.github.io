@@ -17,49 +17,233 @@
     </div>
     <div class="post-body">
       <h1>Preliminary concerns</h1>
-      <p>I genuinely have no clue as to why I decided to attempt this, given all there is that could be annoying. Some of my preliminary concerns and thoughts are below:
-        <ul>
-          <li>Lack of dylib support on iOS; will have to bundle everything which is... unfortunate</li>
-          <li>ROS2 DDS uses multicast UDP, which is blocked on iOS; will have to figure out how to either configure unicast DDS or swap to Zenoh or something (but the latter loses quite a bit of functionality)</li>
-	  <li>rcl_interfaces and std_msgs are .msg files that need to be generated with rosidl on my native installation before the output is compiled for iOS</li>
-        </ul>
+      <p>I genuinely have no clue as to why I decided to attempt this, given all there is that could be annoying. Some
+        of my preliminary concerns and thoughts are below:
+      <ul>
+        <li>Lack of dylib support on iOS; will have to bundle everything which is... unfortunate</li>
+        <li>ROS2 DDS uses multicast UDP, which is blocked on iOS; will have to figure out how to either configure
+          unicast DDS or swap to Zenoh or something (but the latter loses quite a bit of functionality)</li>
+        <li>rcl_interfaces and std_msgs are .msg files that need to be generated with rosidl on my native installation
+          before the output is compiled for iOS</li>
+      </ul>
       </p>
       <h1>Porting CycloneDDS</h1>
-      <p>After a bit of googling, I found out that I need to compile this twice; the first time to get the IDL compiler running and then the iOS build using those host tools. For iOS compilation, I had to check out the <a href="https://github.com/leetal/ios-cmake">iOS CMake tools</a>.</p>
+      <p>After a bit of googling, I found out that I need to compile this twice; the first time to get the IDL compiler
+        running and then the iOS build using those host tools. For iOS compilation, I had to check out the <a
+          href="https://github.com/leetal/ios-cmake">iOS CMake tools</a>.</p>
       <h2>Building</h2>
       <p>I began by checking out CycloneDDS 0.10.5, for ROS2 Jazzy compatibility.<br><br>
-      To build natively, all I had to do was set the flags <code>BUILD_SHARED_LIBS=OFF, ENABLE_SSL=OFF, ENABLE_SECURITY=OFF, ENABLE_SHM=OFF</code> (I also set the build type to release). This generated the file <code>build/ImportExecutables.cmake</code> which is what the later iOS build imports to find <code>idlc</code><br><br>
-      iOS make was similar; all I had to do was link the iOS CMake toolchain downloaded earlier. Building was relatively simple as well; I only had to patch <code>net/if_media.h</code> which is for wired/wireless connection detection (MacOS only header), which isn't really relevant in our use case. I simply used <code>__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__</code> to guard against it. Installation was fine; <code>lipo -info</code> gave architecture arm64 (non-fat file)</p>
+        To build natively, all I had to do was set the flags
+        <code>BUILD_SHARED_LIBS=OFF, ENABLE_SSL=OFF, ENABLE_SECURITY=OFF, ENABLE_SHM=OFF</code> (I also set the build
+        type to release). This generated the file <code>build/ImportExecutables.cmake</code> which is what the later iOS
+        build imports to find <code>idlc</code><br><br>
+        iOS make was similar; all I had to do was link the iOS CMake toolchain downloaded earlier. Building was
+        relatively simple as well; I only had to patch <code>net/if_media.h</code> which is for wired/wireless
+        connection detection (MacOS only header), which isn't really relevant in our use case. I simply used
+        <code>__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__</code> to guard against it. Installation was fine;
+        <code>lipo -info</code> gave architecture arm64 (non-fat file)
+      </p>
       <h1>Building ROS2</h1>
-      <p>Who would have guessed, the shitshow that people call ROS would naturally be quite a bit more challenging to compile than CycloneDDS. The main issue is that when we use our native ROS2 workspace to compile, AMENT_PREFIX_PATH is set to a list of native install prefixes, which when read by CMake links native libraries instead of building in static libs. Just a small example, <code>find_package(rosidl_typesupport_c)</code> points to the native FastRTPS-enabled version which is dynamically linked.<br>
-      To fix this, we need two things:
+      <p>Who would have guessed, the shitshow that people call ROS would naturally be quite a bit more challenging to
+        compile than CycloneDDS. The main issue is that when we use our native ROS2 workspace to compile,
+        AMENT_PREFIX_PATH is set to a list of native install prefixes, which when read by CMake links native libraries
+        instead of building in static libs. Just a small example, <code>find_package(rosidl_typesupport_c)</code> points
+        to the native FastRTPS-enabled version which is dynamically linked.<br>
+        To fix this, we need two things:
       <ul>
-	      <li>set <code>CMAKE_FIND_ROOT_PATH_MODE_*=BOTH</code> so that CMake checks the iOS prefix before the host prefix (both is needed so that ament_cmake generator scripts are still found)</li>
-	      <li>make sure that install-ios is at the beginning of both CMAKE_FIND_ROOT_PATH and CMAKE_PREFIX_PATH so that the iOS libraries are prioritized</li>
+        <li>set <code>CMAKE_FIND_ROOT_PATH_MODE_*=BOTH</code> so that CMake checks the iOS prefix before the host prefix
+          (both is needed so that ament_cmake generator scripts are still found)</li>
+        <li>make sure that install-ios is at the beginning of both CMAKE_FIND_ROOT_PATH and CMAKE_PREFIX_PATH so that
+          the iOS libraries are prioritized</li>
       </ul>
-      I eventually ended up writing a custom wrapper around the aforementioned ios-cmake toolchain that bundled the fixes above. Oh, also, there's no libatomic on iOS. wtf. See <file>/assets/ros2_ios.toolchain.cmake</file>.
+      I eventually ended up writing a custom wrapper around the aforementioned ios-cmake toolchain that bundled the
+      fixes above. Oh, also, there's no libatomic on iOS. wtf. <file>/assets/ros2_ios.toolchain.cmake</file>
       </p>
       <h2>The ROS2 Dependency Tree</h2>
-      <p>The dependency tree for ROS2 is extremely confusing, much more so than it appears in the package.xml files. I eventually had to go with the build order below:
+      <p>The dependency tree for ROS2 is extremely confusing, much more so than it appears in the package.xml files. I
+        eventually had to go with the build order below:
       <ol>
-	      <li><code>rosidl_cmake, rosidl_cli, rosidl_pycommon, rosidl_parser, rosidl_adapter, rosidl_generator_type_description</code> (cmake/python-only rosidl support)</li>
-	      <li><code>rosidl_generator_c, rosidl_generator_cpp</code> (rosidl generators, cmake-only, no compiled code)</li>
-	      <li><code>rosidl_typesupport_c, rosidl_typesupport_cpp</code> (compiled C/C++ libs)</li>
-	      <li><code>libyaml 0.2.5</code> (had to manually build this, it was a pain in the ass)</li>
-	      <li><code>rcl_yaml_param_parser</code> (originally linked libyaml.dylib, had to rebuild)</li>
-	      <li><code>rcpputils, ament_index_cpp, ament_index_python</code> (C++ utilities)</li>
-	      <li><code>builtin_interfaces, service_msgs, rcl_interfaces, type_description_interfaces, rosgraph_msgs, statistics_msgs</code> (message interfaces, rosidl code generation)</li>
-	      <li><code>rosidl_dynamic_typesupport</code></li>
-	      <li><code>rmw_implementation_cmake, rmw_dds_common, rmw_cyclonedds_cpp, rmw_implementation</code></li>
-	      <li><code>rcl</code>, with <code>-DRCL_LOGGING_IMPLEMENTATION=rcl_logging_noop</code></li>
-	      <li><code>libstatistics_collector</code></li>
-	      <li><code>rclcp, std_msgs</code></li>
+        <li>
+          <code>rosidl_cmake, rosidl_cli, rosidl_pycommon, rosidl_parser, rosidl_adapter, rosidl_generator_type_description</code>
+          (cmake/python-only rosidl support)
+        </li>
+        <li><code>rosidl_generator_c, rosidl_generator_cpp</code> (rosidl generators, cmake-only, no compiled code)</li>
+        <li><code>rosidl_typesupport_c, rosidl_typesupport_cpp</code> (compiled C/C++ libs)</li>
+        <li><code>libyaml 0.2.5</code> (had to manually build this, it was a pain in the ass)</li>
+        <li><code>rcl_yaml_param_parser</code> (originally linked libyaml.dylib, had to rebuild)</li>
+        <li><code>rcpputils, ament_index_cpp, ament_index_python</code> (C++ utilities)</li>
+        <li>
+          <code>builtin_interfaces, service_msgs, rcl_interfaces, type_description_interfaces, rosgraph_msgs, statistics_msgs</code>
+          (message interfaces, rosidl code generation)
+        </li>
+        <li><code>rosidl_dynamic_typesupport</code></li>
+        <li><code>rmw_implementation_cmake, rmw_dds_common, rmw_cyclonedds_cpp, rmw_implementation</code></li>
+        <li><code>rcl</code>, with <code>-DRCL_LOGGING_IMPLEMENTATION=rcl_logging_noop</code></li>
+        <li><code>libstatistics_collector</code></li>
+        <li><code>rclcp, std_msgs</code></li>
       </ol>
       </p>
+      <h3>rosidl generator &amp; support packages</h3>
+      <p>I had to do two things; a&rpar; set the platform in the ios-cmake wrapper and b&rpar; make sure the micromamba
+        path was prepended before running colcon. Then, I simply ran</p>
+      <pre><code>colcon build \
+  --base-paths src \
+  --build-base build-ios --install-base install-ios --merge-install \
+  --packages-select \
+    rosidl_cmake rosidl_parser rosidl_cli rosidl_pycommon \
+    rosidl_adapter rosidl_generator_type_description \
+    rosidl_generator_c rosidl_generator_cpp \
+  --cmake-args \
+    -DCMAKE_TOOLCHAIN_FILE=.../toolchain/ros2_ios.toolchain.cmake \
+    -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF \
+    -DCMAKE_BUILD_TYPE=Release -DHAVE_LIBATOMICS=FALSE \
+    -DTRACETOOLS_DISABLED=ON</code></pre>
+      <p>8 packages finished. All cmake/python-only, no compiled code.</p>
+      <h3>rosidl typesupport compiled libs</h3>
+      <p>This was fine; the same flags used for the previous command worked here. No issues arose.</p>
+      <h3>message interfaces</h3>
+      <p>When building <code>rcl_interfaces</code> directly, cmake loaded the native <code>service_msgs</code> package
+        (from the native ROS2 install) which was built with FastRTPS typesupport. The generated cmake targets reference
+        <code>builtin_interfaces::builtin_interfaces__rosidl_typesupport_fastrtps_c</code> doesn't exist in our iOS
+        build.<br>
+        to fix, i just built <code>builtin_interfaces</code> and <code>service_msgs</code> for iOS first. Once they are
+        in <code>install-ios/</code>, the toolchain's priority order ensures they are found instead of the native ones.
+      </p>
+      <h3>libyaml for iOS</h3>
+      <p><code>rcl</code> needs <code>libyaml</code> via the <code>libyaml_vendor</code> cmake package. The Jazzy
+        version of <code>libyaml_vendor</code> requires <code>ament_cmake_vendor_package</code>, a newer ament cmake
+        extension that is not installed in the micromamba env.<br>
+        Rather than trying to upgrade ament_cmake, I bypassed the vendor wrapper entirely and compiled
+        <code>libyaml 0.2.5</code> directly with our iOS toolchain:</p>
+      <pre><code>git clone https://github.com/yaml/libyaml.git /tmp/libyaml-src \
+  --depth 1 --branch 0.2.5
+
+cmake /tmp/libyaml-src -B /tmp/libyaml-build-ios \
+  -DCMAKE_TOOLCHAIN_FILE=.../toolchain/ros2_ios.toolchain.cmake \
+  -DPLATFORM=OS64 \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=$PWD/install-ios \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+cmake --build /tmp/libyaml-build-ios -- -j4
+cmake --install /tmp/libyaml-build-ios</code></pre>
+      <p>This installs <code>install-ios/lib/libyaml.a</code>, <code>install-ios/include/yaml.h</code>, and
+        <code>install-ios/cmake/yamlConfig.cmake</code>.<br>
+        Downstream packages call <code>find_package(libyaml_vendor)</code>, so I created a stub config so this succeeds
+        and finds our iOS libyaml.<br>
+        The originally-built <code>rcl_yaml_param_parser</code> had linked against the native <code>libyaml.dylib</code>
+        (visible in its cmake cache as <code>pkgcfg_lib_YAML_PKG_CONFIG_yaml = .../libyaml.dylib</code>). After creating
+        the stub, I cleared its build cache and rebuilt. </p>
+      <h3>rcl &amp; dependencies</h3>
+      <p>I needed to clone a few missing repos:</p>
+      <pre><code>git clone https://github.com/ros2/rcpputils.git \
+    src/rcpputils --branch jazzy --depth 1
+git clone https://github.com/ament/ament_index.git \
+    src/ament_index --branch jazzy --depth 1
+git clone https://github.com/ros2/rmw_implementation.git \
+    src/rmw_implementation --branch jazzy --depth 1
+git clone https://github.com/ros2/rosidl_dynamic_typesupport.git \
+    src/rosidl_dynamic_typesupport --branch jazzy --depth 1
+git clone https://github.com/ros-tooling/libstatistics_collector.git \
+    src/libstatistics_collector --branch jazzy --depth 1</code></pre>
+      <p>Colcon's pre-build dependency check looks for a <code>package.sh</code> file in the install prefix for every
+        package listed in <code>package.xml</code> as a dependency, even those we intentionally skip (spdlog, test
+        packages, iceoryx, etc.). im lazy so I fixed it by creating empty stub files:</p>
+      <pre><code>for pkg in rcl_logging_spdlog test_msgs std_msgs \
+           iceoryx_hoofs iceoryx_posh iceoryx_binding_c \
+           cyclonedds ament_index_python; do
+  mkdir -p install-ios/share/${pkg}/
+  echo "# blah" > install-ios/share/${pkg}/package.sh
+done</code></pre>
+      <p>I also hit a missing header error:</p>
+      <pre><code>fatal error: 'rosidl_dynamic_typesupport/api/serialization_support.h' file not found</code></pre>
+      <p><code>rcl</code>'s <code>event.c</code> indirectly includes a header from
+        <code>rosidl_dynamic_typesupport</code> via the <code>rmw</code> headers. The package wasn't in our source tree,
+        so I cloned and built it:</p>
+      <pre><code>git clone https://github.com/ros2/rosidl_dynamic_typesupport.git \
+    src/rosidl_dynamic_typesupport --branch jazzy
+colcon build ... --packages-select rosidl_dynamic_typesupport</code></pre>
+      <p><code>rcl</code> defaults to <code>rcl_logging_spdlog</code>, which I overrode since spdlog requires a vendor
+        build that isn't essential for an embedded iOS application:</p>
+      <pre><code>colcon build ... --packages-select rcl \
+  --cmake-args ... -DRCL_LOGGING_IMPLEMENTATION=rcl_logging_noop</code></pre>
+      <p><code>librcl.a</code> built in ~13s. Architecture: arm64.<br><br>
+        One more catch: when <code>libstatistics_collector</code> ran <code>find_package(rcl)</code>, cmake processed
+        <code>rclExport.cmake</code> which records <code>rcl_logging_noop::rcl_logging_noop</code> as a LINK_ONLY
+        dependency target. Since <code>rcl_logging_noop</code> hadn't been found via <code>find_package</code> in that
+        cmake session, the target didn't exist:</p>
+      <pre><code>CMake Error at install-ios/share/rcl/cmake/rclExport.cmake:61:
+  The link interface of target "rcl::rcl" contains:
+    rcl_logging_noop::rcl_logging_noop
+  but the target was not found.</code></pre>
+      <p>Fix: patched <code>install-ios/share/rcl/cmake/ament_cmake_export_dependencies-extras.cmake</code> to add
+        <code>rcl_logging_noop</code> and <code>service_msgs</code> to the <code>_exported_dependencies</code> list:</p>
+      <pre><code>set(_exported_dependencies
+  "ament_cmake;rcl_interfaces;rcl_logging_interface;rcl_logging_noop;
+   rcl_yaml_param_parser;rcutils;rmw;rmw_implementation;rosidl_runtime_c;
+   service_msgs;type_description_interfaces")</code></pre>
+      <h3>RMW / CycloneDDS</h3>
+      <p><code>rmw_cyclonedds_cpp</code> conditionally requires <code>iceoryx_binding_c</code> only when CycloneDDS was
+        compiled with SHM support. Our iOS CycloneDDS was built with <code>SHM_SUPPORT_IS_AVAILABLE "OFF"</code>, so
+        iceoryx is not required at cmake level. However colcon's pre-build check still sees the
+        <code>&lt;depend&gt;iceoryx_binding_c&lt;/depend&gt;</code> in the <code>package.xml</code> and wants stub files
+        (handled above).</p>
+      <pre><code># rmw_dds_common: rosidl-generated msg lib for DDS common messages
+colcon build ... --packages-select rmw_dds_common
+
+# rmw_cyclonedds_cpp: needs both install/ (CycloneDDS) and install-ios/
+colcon build ... --packages-select rmw_cyclonedds_cpp \
+  --cmake-args ... \
+  "-DCMAKE_PREFIX_PATH=.../deps/install;.../deps/install-ios"
+
+# rmw_implementation: the proxy that selects the active RMW at load time
+colcon build ... --packages-select rmw_implementation \
+  --cmake-args ... \
+  "-DCMAKE_PREFIX_PATH=.../deps/install;.../deps/install-ios"</code></pre>
+      <p>The two <code>CMAKE_PREFIX_PATH</code> entries for <code>rmw_cyclonedds_cpp</code>: CycloneDDS was installed to
+        <code>install/</code> (not <code>install-ios/</code>) and its cmake config lives at
+        <code>install/lib/cmake/CycloneDDS/</code>. The toolchain's <code>CMAKE_FIND_ROOT_PATH</code> already includes
+        <code>install-ios</code>, but <code>install/</code> is a separate prefix that must be passed explicitly.</p>
+
+      <h3>rclcpp &amp; std_msgs</h3>
+      <p><code>rclcpp</code> depends on <code>libstatistics_collector</code> (from
+        <code>ros-tooling/libstatistics_collector</code> on the <code>jazzy</code> branch). Its dependencies were all
+        already available at this point.</p>
+      <pre><code>colcon build ... --packages-select libstatistics_collector
+
+colcon build ... --packages-select rclcpp \
+  --cmake-args ... -DRCL_LOGGING_IMPLEMENTATION=rcl_logging_noop
+
+colcon build ... --packages-select std_msgs</code></pre>
+      <p>compiling both of these took quite a while (around 2 min each)<br>
+        <code>lipo -info install-ios/lib/librclcpp.a</code> gives <code>arm64</code>. Same for
+        <code>libstd_msgs__rosidl_typesupport_c.a</code>.
+      </p>
+
+      <h2>Verification</h2>
+        <p>All 59 static libraries in <code>install-ios/lib/</code> confirmed arm64 via <code>lipo -info</code>. if you
+          decide to build this, I'd check:
+        <ul>
+          <li><code>librcl.a</code></li>
+          <li><code>librclcpp.a</code></li>
+          <li><code>librmw_cyclonedds_cpp.a</code></li>
+          <li><code>librmw_dds_common.a</code></li>
+          <li><code>librosidl_typesupport_c.a</code> / <code>librosidl_typesupport_cpp.a</code></li>
+          <li><code>libstd_msgs__rosidl_typesupport_c.a</code> / <code>libstd_msgs__rosidl_typesupport_cpp.a</code></li>
+          <li><code>libyaml.a</code>, <code>libament_index_cpp.a</code>, <code>librcpputils.a</code>,
+            <code>librcutils.a</code></li>
+          <li><code>liblibstatistics_collector.a</code>, <code>librosidl_dynamic_typesupport.a</code>,
+            <code>librcl_yaml_param_parser.a</code></li>
+        </ul>
+        CycloneDDS at <code>install/lib/libddsc.a</code> (also arm64) provides the DDS transport layer.</p>
+        <h1>Quick build</h1>
+        <file>/assets/ros2_ios_quickbuild.sh</file>
     </div>
   </main>
 
   <div id="site-footer"></div>
   <script src="../template.js"></script>
 </body>
+
 </html>
