@@ -105,32 +105,7 @@
       });
   });
 
-  // === Blog index — auto-render post list ===
-  var list = document.getElementById('post-list');
-  if (!list) return;
-
-  fetch('/posts.json')
-    .then(function (r) { return r.json(); })
-    .then(function (posts) {
-      if (posts.length === 0) {
-        list.innerHTML = '<li style="color:#6b88a8">No posts yet.</li>';
-        return;
-      }
-      list.innerHTML = posts.map(function (p) {
-        return (
-          '<li>' +
-            '<span class="post-date">' + p.date + '</span>' +
-            '<a class="post-title" href="' + p.href + '">' + p.title + '</a>' +
-            (p.synopsis ? '<p class="post-excerpt">' + p.synopsis + '</p>' : '') +
-          '</li>'
-        );
-      }).join('');
-    })
-    .catch(function () {
-      list.innerHTML = '<li style="color:#6b88a8">Could not load posts.</li>';
-    });
-
-    // === <github> tag — Aesthetic repo cards ===
+  // === <github> tag — Aesthetic repo cards ===
   document.querySelectorAll('github').forEach(function (tag) {
     var repoPath = tag.textContent.trim(); // e.g., "vinayak-vikram/vterm"
     
@@ -188,4 +163,29 @@
     .gh-lang::before { content: "● "; color: #6b88a8; }
   `;
   document.head.appendChild(style);
+
+  // === Blog index — auto-render post list ===
+  var list = document.getElementById('post-list');
+  if (!list) return;
+
+  fetch('/posts.json')
+    .then(function (r) { return r.json(); })
+    .then(function (posts) {
+      if (posts.length === 0) {
+        list.innerHTML = '<li style="color:#6b88a8">No posts yet.</li>';
+        return;
+      }
+      list.innerHTML = posts.map(function (p) {
+        return (
+          '<li>' +
+            '<span class="post-date">' + p.date + '</span>' +
+            '<a class="post-title" href="' + p.href + '">' + p.title + '</a>' +
+            (p.synopsis ? '<p class="post-excerpt">' + p.synopsis + '</p>' : '') +
+          '</li>'
+        );
+      }).join('');
+    })
+    .catch(function () {
+      list.innerHTML = '<li style="color:#6b88a8">Could not load posts.</li>';
+    });
 })();
