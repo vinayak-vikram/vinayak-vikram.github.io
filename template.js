@@ -129,4 +129,63 @@
     .catch(function () {
       list.innerHTML = '<li style="color:#6b88a8">Could not load posts.</li>';
     });
+
+    // === <github> tag — Aesthetic repo cards ===
+  document.querySelectorAll('github').forEach(function (tag) {
+    var repoPath = tag.textContent.trim(); // e.g., "vinayak-vikram/vterm"
+    
+    var card = document.createElement('a');
+    card.className = 'github-card';
+    card.href = 'https://github.com/' + repoPath;
+    card.target = '_blank';
+    card.innerHTML = '<div class="gh-loading">Loading repo ' + repoPath + '...</div>';
+
+    tag.replaceWith(card);
+
+    fetch('https://api.github.com/repos/' + repoPath)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        card.innerHTML = 
+          '<div class="gh-header">' +
+            '<span class="gh-title">' + data.full_name + '</span>' +
+            '<span class="gh-stars">★ ' + data.stargazers_count + '</span>' +
+          '</div>' +
+          '<p class="gh-description">' + (data.description || 'No description provided.') + '</p>' +
+          '<div class="gh-footer">' +
+            '<span class="gh-lang">' + (data.language || 'Plain') + '</span>' +
+            '<span class="gh-link">View on GitHub ↗</span>' +
+          '</div>';
+      })
+      .catch(function () {
+        card.innerHTML = '<div class="gh-error">GitHub Repo: ' + repoPath + '</div>';
+      });
+  });
+
+  // Basic styles for the GitHub card (add to style.css or keep here)
+  var style = document.createElement('style');
+  style.textContent = `
+    .github-card {
+      display: block;
+      border: 1px solid #e1e4e8;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 20px 0;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s, border-color 0.2s;
+      background: #f6f8fa;
+    }
+    .github-card:hover {
+      transform: translateY(-2px);
+      border-color: #6b88a8;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .gh-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .gh-title { font-weight: bold; color: #0969da; font-family: monospace; }
+    .gh-stars { font-size: 0.9em; color: #57606a; }
+    .gh-description { font-size: 0.9em; margin: 8px 0; color: #24292f; }
+    .gh-footer { font-size: 0.8em; display: flex; justify-content: space-between; color: #57606a; }
+    .gh-lang::before { content: "● "; color: #6b88a8; }
+  `;
+  document.head.appendChild(style);
 })();
