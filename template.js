@@ -151,9 +151,11 @@
 
   // === Blog index — auto-render post list ===
   var list = document.getElementById('post-list');
-  if (!list) return;
+  var notesList = document.getElementById('notes-list');
+  if (!list && !notesList) return;
 
-  fetch('/posts.json')
+  if (list) {
+    fetch('/posts.json')
     .then(function (r) { return r.json(); })
     .then(function (posts) {
       if (posts.length === 0) {
@@ -173,9 +175,8 @@
     .catch(function () {
       list.innerHTML = '<li style="color:#6b88a8">Could not load posts.</li>';
     });
+  }
 
-  // === Notes index — auto-render notes list ===
-  var notesList = document.getElementById('notes-list');
   if (!notesList) return;
 
   fetch('/notes.json')
