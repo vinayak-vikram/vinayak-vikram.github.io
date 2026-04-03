@@ -7,6 +7,7 @@
         '<h1><a href="/">Vinayak Vikram</a></h1>' +
         '<nav>' +
           '<a href="/">Blog</a>' +
+          '<a href="/notes.html">Notes</a>' +
           '<a href="/about.html">About</a>' +
         '</nav>' +
       '</header>';
@@ -136,33 +137,17 @@
       });
   });
 
-  // Basic styles for the GitHub card (add to style.css or keep here)
-  var style = document.createElement('style');
-  style.textContent = `
-    .github-card {
-      display: block;
-      border: 1px solid #e1e4e8;
-      border-radius: 8px;
-      padding: 16px;
-      margin: 20px 0;
-      text-decoration: none;
-      color: inherit;
-      transition: transform 0.2s, border-color 0.2s;
-      background: #f6f8fa;
-    }
-    .github-card:hover {
-      transform: translateY(-2px);
-      border-color: #6b88a8;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    .gh-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .gh-title { font-weight: bold; color: #0969da; font-family: monospace; }
-    .gh-stars { font-size: 0.9em; color: #57606a; }
-    .gh-description { font-size: 0.9em; margin: 8px 0; color: #24292f; }
-    .gh-footer { font-size: 0.8em; display: flex; justify-content: space-between; color: #57606a; }
-    .gh-lang::before { content: "● "; color: #6b88a8; }
-  `;
-  document.head.appendChild(style);
+  // === Post page — inject date from posts.json ===
+  var dateEl = document.querySelector('.post-header .post-date');
+  if (dateEl) {
+    fetch('/posts.json')
+      .then(function (r) { return r.json(); })
+      .then(function (posts) {
+        var match = posts.find(function (p) { return p.href === location.pathname; });
+        if (match && match.date) dateEl.textContent = match.date;
+      })
+      .catch(function () {});
+  }
 
   // === Blog index — auto-render post list ===
   var list = document.getElementById('post-list');
@@ -187,5 +172,29 @@
     })
     .catch(function () {
       list.innerHTML = '<li style="color:#6b88a8">Could not load posts.</li>';
+    });
+
+  // === Notes index — auto-render notes list ===
+  var notesList = document.getElementById('notes-list');
+  if (!notesList) return;
+
+  fetch('/notes.json')
+    .then(function (r) { return r.json(); })
+    .then(function (notes) {
+      if (notes.length === 0) {
+        notesList.innerHTML = '<li style="color:#6b88a8">No notes yet.</li>';
+        return;
+      }
+      notesList.innerHTML = notes.map(function (n) {
+        return (
+          '<li>' +
+            (n.date ? '<span class="note-date">' + n.date + '</span>' : '') +
+            '<a class="note-title" href="' + n.href + '">' + n.name + '</a>' +
+          '</li>'
+        );
+      }).join('');
+    })
+    .catch(function () {
+      notesList.innerHTML = '<li style="color:#6b88a8">Could not load notes.</li>';
     });
 })();

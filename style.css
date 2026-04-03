@@ -132,6 +132,99 @@ main {
   margin: 1.25rem 0;
 }
 
+/* GitHub repo cards */
+.github-card {
+  display: block;
+  border: 1px solid #c2d9f0;
+  border-radius: 6px;
+  padding: 1rem 1.1rem;
+  margin: 1.5rem 0;
+  text-decoration: none;
+  color: inherit;
+  background: #f4f9ff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.github-card:hover {
+  border-color: #4a6fa5;
+  box-shadow: 0 3px 10px rgba(42, 108, 176, 0.1);
+  text-decoration: none;
+}
+
+.gh-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.gh-title {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.95rem;
+  color: #2a6cb0;
+}
+
+.gh-stars {
+  font-size: 0.85rem;
+  color: #6b88a8;
+}
+
+.gh-description {
+  font-size: 0.9rem;
+  color: #3a4a60;
+  margin: 0.3rem 0 0.6rem;
+}
+
+.gh-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #6b88a8;
+}
+
+.gh-lang::before {
+  content: "● ";
+  color: #4a6fa5;
+}
+
+/* Notes list */
+.notes-list {
+  list-style: none;
+}
+
+.notes-list li {
+  padding: 1.2rem 0;
+  border-bottom: 1px solid #c2d9f0;
+  display: flex;
+  align-items: baseline;
+  gap: 1.2rem;
+}
+
+.notes-list li:last-child {
+  border-bottom: none;
+}
+
+.notes-list .note-date {
+  font-size: 0.85rem;
+  color: #6b88a8;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.notes-list .note-title {
+  font-size: 1.1rem;
+}
+
+/* PDF viewer */
+.pdf-viewer {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 240px);
+  min-height: 500px;
+  border: 1px solid #c2d9f0;
+  border-radius: 4px;
+}
+
 /* File blocks */
 .file-block {
   margin: 1.5rem 0;
