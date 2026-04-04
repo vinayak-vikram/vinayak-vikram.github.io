@@ -56,7 +56,7 @@ function gitFirstCommitDate(relPath) {
 const notes = noteFiles.map(file => {
   const name = file.replace(/\.pdf$/i, '');
   const date = gitFirstCommitDate('notes/' + file);
-  return { name, date, href: '/notes/viewer.html?file=/notes/' + file };
+  return { name, date, href: '/notes/' + file };
 });
 
 notes.sort((a, b) => new Date(b.date) - new Date(a.date));
