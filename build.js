@@ -72,7 +72,7 @@ const notes = noteFiles.map(file => {
   const stem = file.replace(/\.pdf$/i, '');
   const { name, date: filenameDate } = parseStem(stem);
   const date = filenameDate !== null ? filenameDate : gitFirstCommitDate('notes/' + file);
-  return { name, date, href: '/notes/viewer.html?file=/notes/' + file };
+  return { name, date, href: '/notes/' + file };
 });
 
 notes.sort((a, b) => new Date(b.date) - new Date(a.date));
