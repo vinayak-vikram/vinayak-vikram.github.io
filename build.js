@@ -1,10 +1,39 @@
 #!/usr/bin/env node
 // Run after adding posts or notes: node build.js
 // Scans posts/*.html and notes/*.pdf, writes posts.json and notes.json.
+//
+// Note date override: append _YYYY-MM-DD before the extension to set the date
+// manually (useful for backdating older work), e.g. my_notes_2025-11-03.pdf
+// The suffix is stripped from the display name automatically.
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+
+function gitFirstCommitDate(relPath) {
+  try {
+    const out = execSync(
+      `git log --follow --format=%aI --diff-filter=A -- "${relPath}"`,
+      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }
+    ).trim();
+    if (!out) return '';
+    const d = new Date(out.split('\n')[0]);
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  } catch (e) {
+    return '';
+  }
+}
+
+// Returns { name, date } from a filename stem, honoring _YYYY-MM-DD suffix.
+function parseStem(stem) {
+  const m = stem.match(/^(.*?)_(\d{4}-\d{2}-\d{2})$/);
+  if (m) {
+    const d = new Date(m[2]);
+    const date = isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return { name: m[1], date };
+  }
+  return { name: stem, date: null }; // null = fall back to git
+}
 
 // === Posts ===
 const postsDir = path.join(__dirname, 'posts');
@@ -39,24 +68,11 @@ const noteFiles = fs.existsSync(notesDir)
   ? fs.readdirSync(notesDir).filter(f => f.toLowerCase().endsWith('.pdf')).sort()
   : [];
 
-function gitFirstCommitDate(relPath) {
-  try {
-    const out = execSync(
-      `git log --follow --format=%aI --diff-filter=A -- "${relPath}"`,
-      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }
-    ).trim();
-    if (!out) return '';
-    const d = new Date(out.split('\n')[0]);
-    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  } catch (e) {
-    return '';
-  }
-}
-
 const notes = noteFiles.map(file => {
-  const name = file.replace(/\.pdf$/i, '');
-  const date = gitFirstCommitDate('notes/' + file);
-  return { name, date, href: '/notes/' + file };
+  const stem = file.replace(/\.pdf$/i, '');
+  const { name, date: filenameDate } = parseStem(stem);
+  const date = filenameDate !== null ? filenameDate : gitFirstCommitDate('notes/' + file);
+  return { name, date, href: '/notes/viewer.html?file=/notes/' + file };
 });
 
 notes.sort((a, b) => new Date(b.date) - new Date(a.date));
