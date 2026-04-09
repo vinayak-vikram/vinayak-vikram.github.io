@@ -1,5 +1,11 @@
 [
   {
+    "title": "Writing & Training a Science Bowl Practice CLI",
+    "date": "April 9, 2026",
+    "synopsis": "Writing a simple CLI for science bowl practice. Involves training models for extracting questions as well as question judging. Doing it just to brush up on my classifiers/tokenizers.",
+    "href": "/posts/scibowl_ai.html"
+  },
+  {
     "title": "Cross-compiling ROS2 for iPhone",
     "date": "March 31, 2026",
     "synopsis": "Cross-compiling ROS2 for iPhone. Goal is to bundle basic node and messaging functionality, and maybe a localized python for quick testing purposes. Who knows about the last part.",
