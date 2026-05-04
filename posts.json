@@ -1,8 +1,8 @@
 [
   {
-    "title": "Writing & Training a Science Bowl Practice CLI",
+    "title": "Writing & Training a Science Bowl Set Generator",
     "date": "April 9, 2026",
-    "synopsis": "Writing a simple CLI for science bowl practice. Involves training models for extracting questions as well as question judging. Doing it just to brush up on my classifiers/tokenizers.",
+    "synopsis": "Writing a simple CLI to generate science bowl packets from textbooks.",
     "href": "/posts/scibowl_ai.html"
   },
   {
